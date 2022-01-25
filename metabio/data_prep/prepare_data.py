@@ -210,8 +210,8 @@ def prepare_descriptors(X_df, parent_or_metab, endpoint, model_path, desc_type="
     if save_columns == True:
         if os.path.isdir(f"{model_path}") == False:
             os.mkdir(f"{model_path}")
-        pd.DataFrame(X_df.columns, 
-                    columns=["Feature"]).to_csv(f'{model_path}/model_{endpoint}_{desc_type}_{parent_or_metab}_variance_filter_columns.csv', index=False)
+        columns_df = pd.DataFrame(X_df.columns, 
+                                columns=["Feature"]).to_csv(f'{model_path}/model_{endpoint}_{desc_type}_{parent_or_metab}_variance_filter_columns.csv', index=False)
 
     
     ### Normalize all descriptors

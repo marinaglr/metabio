@@ -74,7 +74,7 @@ def train_fold(X_train_df, X_test_df, y_train, method, splitter, feat_sel, overs
         
     elif method == 'GB':
         param_grid = {'n_estimators': [200,400,600], 'min_samples_leaf': [1,2,3], 'learning_rate': [0.1, 0.01]}
-        grid = GridSearchCV(GradientBoostingClassifier(random_state=2020), param_grid=param_grid, refit=True, cv=splitter, scoring='f1_macro', n_jobs=4)
+        grid = GridSearchCV(GradientBoostingClassifier(random_state=2020), param_grid=param_grid, refit=True, cv=splitter, scoring='f1_macro', n_jobs=8)
         grid.fit(X_train, y_train)
         model = grid.best_estimator_
         
@@ -267,7 +267,7 @@ def train_models_from_CV_files(cv_folds, endpoint, desc_type, method='RF', feat_
     Input:
         cv_folds: int - number of folds
         endpoint: str - name of the endpoint
-        desc_type: str - in vitro or in vivo
+        desc_type: str - chem or metab
         num_trees: int - number of trees of RF (if grid_search==False)
         method: str - RF, KNN, GB or SVM
         feat_sel: bool - perform feature selection with lasso (without optimization of regularization parameter)
@@ -341,7 +341,7 @@ def train_models_metabolite_label(parents_df, metabolites_df, cv_folds, endpoint
         cv_folds: int - number of folds
         endpoint: str - name of the endpoint
         endpoint_col: str - name of the column containing the class label
-        desc_type: str - in vitro or in vivo
+        desc_type: str - chem or metab
         method: str - RF, KNN, GB or SVM
         feat_sel: bool - perform feature selection with lasso (without optimization of regularization parameter)
         oversampling: bool - perform oversampling with SMOTENC

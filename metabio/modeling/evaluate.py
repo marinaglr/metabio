@@ -38,27 +38,30 @@ def calc_mean_results(all_results):
         
     return mean_results
 
-def evaluate_model_CV(endpoint, desc_type, crossvalidation_output_file, feat_sel="False", metab_labels=False):
+def evaluate_model_CV(endpoint, desc_type, method, crossvalidation_output_path, feat_sel=False, metab_labels=False):
     """
     Calculate mean and std from the p-values calculated for the test set and stored in the crossvalidation output file
     
     Parameters:
     ----------
     endpoint: str - name of the endpoint
-    endp_type: str - in vitro or in vivo
-    evaluation_dataframes: dict - 
+    desc_type: str - chem or metab
+    method: str - RF, KNN, GB or SVM
+    crossvalidation_output_path: str - path where the predictions on the crossvalidation sets are stored
+    feat_sel: bool - use results from models including feature selection prior to model training
+    metab_labels: bool - use results from models including labeled metabolites in the training set
     
     Output:
     -------
-    return: evaluation_dataframes dictionary with calculated data for the endpoint
+    return: dataframe containing the mean evaluation results
     """
     
     # Load output dataframe with p-values
     if metab_labels == True:
-        cv_filename = f'{crossvalidation_output_file}_{endpoint}_{desc_type}_featSel={feat_sel}_metabLabels.csv'
+        cv_filename = f'{crossvalidation_output_path}/crossvalidation_{endpoint}_{method}_{desc_type}_featSel={feat_sel}_metab.csv'
         
     else:
-        cv_filename = f'{crossvalidation_output_file}_{endpoint}_{desc_type}_featSel={feat_sel}.csv'
+        cv_filename = f'{crossvalidation_output_path}/crossvalidation_{endpoint}_{method}_{desc_type}_featSel={feat_sel}.csv'
     cv_results = pd.read_csv(cv_filename)
     cv_numbers = cv_results.cv.unique()
     
@@ -66,14 +69,12 @@ def evaluate_model_CV(endpoint, desc_type, crossvalidation_output_file, feat_sel
     all_results = pd.DataFrame()
     for i in cv_numbers:
         results_df_cv = cv_results[cv_results["cv"] == i]
-        result = calc_scores(results_df_cv[endpoint].values, results_df_cv["prediction"].values, y_pred_prob=results_df_cv["probability"].values, 
-                                    silent=True, modelname=f"{endpoint}_{desc_type}")
+        result = calc_scores(results_df_cv[endpoint].values, results_df_cv["prediction"].values, 
+                                y_pred_prob=results_df_cv["probability"].values, silent=True)
         all_results = pd.concat([all_results, result])
         
-    
     ### Calculate mean results on test set
     mean_results = calc_mean_results(all_results)
-    print(mean_results)
     
     return mean_results
 

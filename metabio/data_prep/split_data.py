@@ -26,7 +26,8 @@ def create_CV_splits(parents_df, metabolites_df, output_path, cv_folds, endpoint
         testset parents: f"{output_path}/{endpoint}_testset_metabLabels_{count}.csv"
         training set (parents and metabolites): "{output_path}/{endpoint}_trainingset_metabLabels_{count}.csv"
     """
-    assert os.path.isdir(output_path), 'Output path to store does not exist.'
+    assert os.path.isdir(output_path), 'Output path to store the splits does not exist.'
+    assert os.path.isdir(model_path), 'Model path to store feature scaler model and the remaining columns does not exist.'
 
     parents_df.reset_index(drop=True, inplace=True) # make parent index from 0 to X
     info_cols = [c for c in metabolites_df.columns if "info_" in c] # additional columns with information about the metabolites (e.g. phaseII, biotransformation, etc.) to remove
@@ -64,11 +65,11 @@ def create_CV_splits(parents_df, metabolites_df, output_path, cv_folds, endpoint
             smi = X_train_df["SMILES (Canonical)"].values
             X_train_formatted = X_train_df.drop([endpoint_col, "SMILES (Canonical)", "parent_SMILES"], axis=1)
             X_train_formatted = X_train_formatted[selected_cols_parent]
-            X_train_formatted_norm = scaler_parent.transform(X_train_formatted.values)
+            X_train_formatted_norm = scaler_parent.transform(X_train_formatted)
             X_train_formatted = pd.DataFrame(X_train_formatted_norm, columns=X_train_formatted.columns)
             X_train_formatted = pd.concat([pd.DataFrame(smi, columns=["SMILES (Canonical)"]), pd.DataFrame(endp, columns=[endpoint]), X_train_formatted], axis=1)
             X_train_formatted.to_csv(f"{output_path}/{endpoint}_trainingset_parent_{count}.csv", index=False)
-
+            
             if only_parents == False:
                 ### Get the metabolites of the parents in the test set (to remove them from training set)
                 test_compounds = pd.DataFrame()
@@ -99,7 +100,7 @@ def create_CV_splits(parents_df, metabolites_df, output_path, cv_folds, endpoint
                 smiles_train = X_train_df["SMILES (Canonical)"].values           
                 X_train_df.drop([endpoint_col, "SMILES (Canonical)", "parent_SMILES"], axis=1, inplace=True)
                 X_train_df = X_train_df[selected_cols_metab]
-                X_train_norm = scaler_metab.transform(X_train_df.values)
+                X_train_norm = scaler_metab.transform(X_train_df)
                 X_train_df = pd.DataFrame(X_train_norm, columns=X_train_df.columns)
 
                 ### Write out train parents and metabolites file

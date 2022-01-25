@@ -4,3 +4,7 @@ results/
 metabio.egg-info/
 .vscode
 __pycache__/
+check_models.py
+metabio/modeling/train_rapids.py
+run_metabio_rapids.py
+metabio/data_prep/cddd.py
