@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from sklearn.metrics import f1_score, balanced_accuracy_score, matthews_corrcoef, recall_score, precision_score, roc_auc_score
 
 
@@ -41,19 +40,15 @@ def calc_mean_results(all_results):
 def evaluate_model_CV(endpoint, desc_type, method, crossvalidation_output_path, feat_sel=False, metab_labels=False):
     """
     Calculate mean and std from the p-values calculated for the test set and stored in the crossvalidation output file
-    
-    Parameters:
-    ----------
-    endpoint: str - name of the endpoint
-    desc_type: str - chem or metab
-    method: str - RF, KNN, GB or SVM
-    crossvalidation_output_path: str - path where the predictions on the crossvalidation sets are stored
-    feat_sel: bool - use results from models including feature selection prior to model training
-    metab_labels: bool - use results from models including labeled metabolites in the training set
-    
+    Input:
+        endpoint: str - name of the endpoint
+        desc_type: str - chem or metab
+        method: str - RF, KNN, GB or SVM
+        crossvalidation_output_path: str - path where the predictions on the crossvalidation sets are stored
+        feat_sel: bool - use results from models including feature selection prior to model training
+        metab_labels: bool - use results from models including labeled metabolites in the training set
     Output:
-    -------
-    return: dataframe containing the mean evaluation results
+        return: dataframe containing the mean evaluation results
     """
     
     # Load output dataframe with p-values

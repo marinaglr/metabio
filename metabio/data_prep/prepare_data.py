@@ -185,10 +185,10 @@ def prepare_descriptors(X_df, parent_or_metab, endpoint, model_path, desc_type="
     
     Input:
         X_df: dataframe - input dataframe with descriptors
-        parent_or_metab: str #TODO 
+        parent_or_metab: str - 'parent' or 'metab': indicate whether the X_df data contains only the parent compounds or metabolites
         endpoint: str - name of the endpoint
         model_path: str - path to save the feature scaler model and the remaining columns after variance filter
-        desc_type: str - #TODO
+        desc_type: str - input feature set: 'chem', 'metab' or 'cddd'
         save_normalizer: bool - save the model used to scale the features
         save_columns: bool - save a CSV file containing the name of the remaining columns after the variance filter
     

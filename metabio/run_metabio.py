@@ -6,13 +6,12 @@ from pathlib import Path
 from metabio.modeling.probability_combiner import ProbabilityCombiner
 import metabio.modeling.train as train
 import metabio.modeling.evaluate as evaluate
-import metabio.data_prep.prepare_data as prepare_data
 import metabio.data_prep.split_data as split_data
 
 # Define main path where the data and results folders are contained
 MAIN_PATH = Path(__file__).parent.parent
 DATA_PATH = f'{MAIN_PATH}/data'
-RESULTS_PATH = f'{MAIN_PATH}/results'
+RESULTS_PATH = f'{MAIN_PATH}/results/'
 assert os.path.isdir(DATA_PATH), f'Data path does not exist.'
 assert os.path.isdir(RESULTS_PATH), f'Results path does not exist.'
 
@@ -48,14 +47,14 @@ for endpoint in endpoints:
     # load data
     if args.splits == True or args.train_metab == True or args.train == True:
         parent_df = pd.read_csv(f'{MAIN_PATH}/data/parents/{endpoint}_dataset.csv', header=0)
-        labeled_metab = pd.read_csv(f'{MAIN_PATH}/data/metabolites/{endpoint}_labeled_metabolites.csv', index_col=0)
+        labeled_metab = pd.read_csv(f'{MAIN_PATH}/data/metabolites/{endpoint}_labeled_metabolites.csv')
 
     # create data splits used for training and evaluating the models
     if args.splits == True:
         print(f'\nCreating CV splits for {endpoint}')
         output_path = f'{MAIN_PATH}/data/test_splits'
         model_path = f'{MAIN_PATH}/models'
-        split_data.create_CV_splits(parent_df, labeled_metab, output_path, cv, endpoint, endpoint_col, model_path, only_parents=False, split_num=args.split_num)
+        split_data.create_CV_splits(parent_df, labeled_metab, output_path, cv, endpoint, endpoint_col, model_path, desc_type=args.desc, only_parents=False, split_num=args.split_num)
         
     if args.train == True:
         print(f'\nTraining models for {endpoint}')
@@ -68,7 +67,7 @@ for endpoint in endpoints:
     if args.train_metab == True:
         print(f'\nTraining models for {endpoint}')
         models, mean_results = train.train_models_metabolite_label(parent_df, labeled_metab, cv, endpoint, endpoint_col, desc_type=args.desc, create_splits=False, method=method, 
-                                            feat_sel=args.lasso, oversampling=args.oversampling, grid_search=args.grid, num_trees=500)
+                                            feat_sel=args.lasso, oversampling=args.oversampling, grid_search=args.grid, num_trees=500, splits_path=f'{MAIN_PATH}/data/splits/')
         mean_results.to_csv(f'{MAIN_PATH}/results/{endpoint}_metab_{method}_desc={args.desc}_oversampling={args.oversampling}_featSel={args.lasso}.csv')                                    
 
         
@@ -89,13 +88,13 @@ for endpoint in endpoints:
 
 
         combiner = ProbabilityCombiner(endpoint, metabolites_df, desc_type=args.desc)
-        mean_results = combiner.evaluate_combined_probabilities(test_parents_path, model_path=f'{MAIN_PATH}/models', results_path=RESULTS_PATH, approach=args.approach, 
+        mean_results = combiner.evaluate_combined_probabilities(test_parents_path, model_path=f'{MAIN_PATH}/models', results_path=RESULTS_PATH, approach=args.approach,
                                                                 combinations=['baseline', 'only_parents', 'mean', 'median', 'max_all', 'max_metab'],
                                                                 cv_runs=5, feat_sel=args.lasso, score_threshold=args.score, detox_phaseII=args.detox, logP=args.logp, method=args.method)
         
-        if os.path.isdir(f'{MAIN_PATH}/results/{args.approach}') == False:
-            os.mkdir(f'{MAIN_PATH}/results/{args.approach}')
+        if os.path.isdir(f'{RESULTS_PATH}/{args.approach}') == False:
+            os.mkdir(f'{RESULTS_PATH}/{args.approach}')
         
-        mean_results.to_csv(f'{MAIN_PATH}/results/{args.approach}/mean_{endpoint}_{method}_scoreThreshold={args.score}_detoxPhaseII={args.detox}_logP={args.logp}_featSel={args.lasso}.csv')
+        mean_results.to_csv(f'{RESULTS_PATH}/{args.approach}/mean_{endpoint}_{method}_scoreThreshold={args.score}_detoxPhaseII={args.detox}_logP={args.logp}_featSel={args.lasso}.csv')
 
 

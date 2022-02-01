@@ -12,7 +12,7 @@ from sklearn.linear_model import LassoCV
 from sklearn.svm import SVC
 
 import pickle
-from imblearn.over_sampling import SMOTENC
+from imblearn.over_sampling import SMOTENC, SMOTE
 
 from metabio.modeling.evaluate import calc_mean_results, evaluate_test_set
 from metabio.data_prep.split_data import create_CV_splits
@@ -54,7 +54,7 @@ def train_fold(X_train_df, X_test_df, y_train, method, splitter, feat_sel, overs
     
     ### Oversampling with SMOTEC
     if oversampling == True:
-        X_train_df, y_train = oversample(X_train_df, y_train)
+        X_train_df, y_train = oversample(X_train_df, y_train, categorical=True)
         X_train = X_train_df.values
 
     if method == 'RF':
@@ -75,12 +75,6 @@ def train_fold(X_train_df, X_test_df, y_train, method, splitter, feat_sel, overs
     elif method == 'GB':
         param_grid = {'n_estimators': [200,400,600], 'min_samples_leaf': [1,2,3], 'learning_rate': [0.1, 0.01]}
         grid = GridSearchCV(GradientBoostingClassifier(random_state=2020), param_grid=param_grid, refit=True, cv=splitter, scoring='f1_macro', n_jobs=8)
-        grid.fit(X_train, y_train)
-        model = grid.best_estimator_
-        
-    elif method == 'SVM':
-        param_grid = {'C': [0.1, 1, 10], 'class_weight': ['balanced'], 'gamma': ['scale', 'auto', 1, 0.01, 0.1]}
-        grid = GridSearchCV(SVC(probability=True, random_state=2020), param_grid=param_grid, refit=True, cv=splitter, scoring='f1_macro', n_jobs=4)
         grid.fit(X_train, y_train)
         model = grid.best_estimator_
 
@@ -130,24 +124,30 @@ def feat_selection(X_train_df, y_train, X_test_df, splitter, endpoint, count, fe
     
     return X_train_df, X_test_df, lasso_coefficients
 
-def oversample(X_train_df, y_train, sampling_strategy=0.8):
+def oversample(X_train_df, y_train, sampling_strategy=0.8, categorical=True):
     '''
     Apply oversampling with SMOTENC on a set of categorical and numerical features.
     Input:
         X_train_df: df - input features from training set
         y_train: array - class labels from training set
+        sampling_strategy: float - ratio of the number of samples in the minority class over the number of samples in the majority class after resampling
+        categorical: bool - use SMOTENC to account for categorical input features
     
     Output:
         X_train_df and y_train with oversampled data.
     '''
     X_train = X_train_df.values
-    # Get location of fingerprint columns (not just name of columns)
-    cat_columns=[]
-    col = X_train_df[[c for c in X_train_df.columns if 'byte vector' in c.lower() or 'bit_' in c.lower() or 'transf' in c.lower() or 'Num' in c or 'Count' in c or '_fr_' in c]]
-    for i in col:
-        cat_columns.append(X_train_df.columns.get_loc(i))
+    if categorical == True:
+        # Get location of categorical columns (not just name of columns)
+        cat_columns=[]
+        col = X_train_df[[c for c in X_train_df.columns if 'byte vector' in c.lower() or 'bit_' in c.lower() or 'transf' in c.lower() or 'Num' in c or 'Count' in c or '_fr_' in c]]
+        for i in col:
+            cat_columns.append(X_train_df.columns.get_loc(i))
 
-    sm = SMOTENC(categorical_features=cat_columns, sampling_strategy=sampling_strategy)
+        sm = SMOTENC(categorical_features=cat_columns, sampling_strategy=sampling_strategy)
+    else:
+        sm = SMOTE(sampling_strategy=sampling_strategy)
+
     X_train, y_train = sm.fit_resample(X_train, y_train)
     X_train_df = pd.DataFrame(X_train)
     
@@ -173,7 +173,7 @@ def train_models(data_X_df, class_y, smiles, cv_folds, endpoint, desc_type, meth
         smiles: list - with the smiles matching the class_y array
         cv_folds: int - number of folds
         endpoint: str - name of the endpoint
-        desc_type: str - chem or metab
+        desc_type: str - chem, metab or cddd
         num_trees: int - number of trees of RF (only if grid_search==False)
         method: str - RF, KNN, GB or SVM
         feat_sel: bool - perform feature selection with lasso (without optimization of regularization parameter)
@@ -267,7 +267,7 @@ def train_models_from_CV_files(cv_folds, endpoint, desc_type, method='RF', feat_
     Input:
         cv_folds: int - number of folds
         endpoint: str - name of the endpoint
-        desc_type: str - chem or metab
+        desc_type: str - chem, metab or cddd
         num_trees: int - number of trees of RF (if grid_search==False)
         method: str - RF, KNN, GB or SVM
         feat_sel: bool - perform feature selection with lasso (without optimization of regularization parameter)
@@ -331,7 +331,7 @@ def train_models_from_CV_files(cv_folds, endpoint, desc_type, method='RF', feat_
     return models_cv, mean_results
 
 def train_models_metabolite_label(parents_df, metabolites_df, cv_folds, endpoint, endpoint_col, desc_type, create_splits=False, method='RF', 
-                                  feat_sel=False, oversampling=False, grid_search=False, num_trees=500):
+                                  feat_sel=False, oversampling=False, grid_search=False, num_trees=500, splits_path=f'{MAIN_PATH}/data/splits/'):
     
     '''
     Train models including labeled metabolites in the training set.
@@ -341,7 +341,7 @@ def train_models_metabolite_label(parents_df, metabolites_df, cv_folds, endpoint
         cv_folds: int - number of folds
         endpoint: str - name of the endpoint
         endpoint_col: str - name of the column containing the class label
-        desc_type: str - chem or metab
+        desc_type: str - chem, metab or cddd
         method: str - RF, KNN, GB or SVM
         feat_sel: bool - perform feature selection with lasso (without optimization of regularization parameter)
         oversampling: bool - perform oversampling with SMOTENC
@@ -370,12 +370,12 @@ def train_models_metabolite_label(parents_df, metabolites_df, cv_folds, endpoint
     ### Train CV models
     for count in range(1, cv_folds+1):
         print(f'Training CV {count}...')
-        X_train_df = pd.read_csv(f'{MAIN_PATH}/data/splits/{endpoint}_trainingset_metab_{count}.csv')
+        X_train_df = pd.read_csv(f'{splits_path}/{endpoint}_trainingset_metab_{count}.csv')
         y_train = X_train_df[endpoint].values
         smiles_train = X_train_df['SMILES (Canonical)'].values
         X_train_df = X_train_df.drop(['SMILES (Canonical)', endpoint], axis=1)
 
-        X_test_df = pd.read_csv(f'{MAIN_PATH}/data/splits/{endpoint}_testset_metab_{count}.csv')
+        X_test_df = pd.read_csv(f'{splits_path}/{endpoint}_testset_metab_{count}.csv')
         y_test = X_test_df[endpoint].values
         smiles_test = X_test_df['SMILES (Canonical)'].values
         X_test_df = X_test_df.drop(['SMILES (Canonical)', endpoint], axis=1)

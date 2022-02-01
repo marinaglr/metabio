@@ -6,7 +6,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from metabio.data_prep.prepare_data import prepare_descriptors
 
 
-def create_CV_splits(parents_df, metabolites_df, output_path, cv_folds, endpoint, endpoint_col, model_path, only_parents=False, split_num=-1):
+def create_CV_splits(parents_df, metabolites_df, output_path, cv_folds, endpoint, endpoint_col, model_path, desc_type='chem', only_parents=False, split_num=-1):
     """
     Create and save the training and test sets for CV. 
     The training set contains both parent compounds and metabolites which are not among the test compounds.
@@ -19,6 +19,7 @@ def create_CV_splits(parents_df, metabolites_df, output_path, cv_folds, endpoint
         endpoint: str - name of the endpoint
         endpoint_col: str - name of the column containing the class label
         model_path: str - path to save the feature scaler model and the remaining columns after variance filter 
+        desc_type: str - input feature set: 'chem', 'metab' or 'cddd'
         only_parents: bool - True to write out only the files containing parent compounds
         split_num: int - split number to create the splits for. To create all, set value to -1
     
@@ -48,9 +49,9 @@ def create_CV_splits(parents_df, metabolites_df, output_path, cv_folds, endpoint
     ### Apply variance filter and normalizer for parent and metab data sets
     # Parent data set
     parents_X_df = parents_df.drop(["SMILES (Canonical)", endpoint_col], axis=1)
-    parents_X_df, selected_cols_parent, scaler_parent = prepare_descriptors(X_df=parents_X_df, parent_or_metab="parent", endpoint=endpoint, model_path=model_path)
+    parents_X_df, selected_cols_parent, scaler_parent = prepare_descriptors(X_df=parents_X_df, parent_or_metab="parent", endpoint=endpoint, model_path=model_path, desc_type=desc_type)
     # Metab data set
-    data_X_df, selected_cols_metab, scaler_metab = prepare_descriptors(X_df=data_X_df, parent_or_metab="metab", endpoint=endpoint, model_path=model_path)
+    data_X_df, selected_cols_metab, scaler_metab = prepare_descriptors(X_df=data_X_df, parent_or_metab="metab", endpoint=endpoint, model_path=model_path, desc_type=desc_type)
     
     
     ### Fit model within crossvalidation and make prediction for respective test set

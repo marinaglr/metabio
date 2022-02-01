@@ -51,7 +51,7 @@ class ProbabilityCombiner():
 
         
         ### Load model from CV run
-        filename = f'{model_path}/model_{self.endpoint}_chem_featSel={feat_sel}_{method}_{baseline_or_metab}_{cv_run}.sav'
+        filename = f'{model_path}/model_{self.endpoint}_{self.desc_type}_featSel={feat_sel}_{method}_{baseline_or_metab}_{cv_run}.sav'
         loaded_model = pickle.load(open(filename, 'rb'))
         if feat_sel == True:
             selectedColumns = pd.read_csv(f'{model_path}/model_{self.endpoint}_{self.desc_type}_{baseline_or_metab}_{cv_run}_columns.csv').values.squeeze()
