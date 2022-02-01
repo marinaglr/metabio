@@ -2,8 +2,6 @@
 
 This repository is part of the supporting information to
 
-This repository is part of the supporting information to
-
 <b> Consideration of predicted small-molecule metabolites in computational toxicology </b><br />
 Marina Garcia de Lomana<sup>1,2</sup>, Fredrik Svensson<sup>3</sup>, Andrea Volkamer<sup>4</sup>, Miriam Mathea<sup>1*</sup>, and Johannes Kirchmair<sup>2*</sup><br />
 <sup>1</sup>: BASF SE, 67063 Ludwigshafen am Rhein, Germany
